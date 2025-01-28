@@ -17,8 +17,6 @@ import (
 )
 
 func main() {
-	fmt.Println(os.Getenv("DISCORD_TOKEN")) 
-
 	client, err := disgo.New(os.Getenv("DISCORD_TOKEN"),
 		// set gateway options
 		bot.WithGatewayConfigOpts(
@@ -27,6 +25,7 @@ func main() {
 				gateway.IntentGuilds,
 				gateway.IntentGuildMessages,
 				gateway.IntentDirectMessages,
+				gateway.IntentGuildVoiceStates,
 			),
 		),
 		// add event listeners

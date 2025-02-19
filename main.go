@@ -9,12 +9,20 @@ import (
 	"os/signal"
 	"syscall"
 
+
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
+	"github.com/disgoorg/snowflake/v2"
 )
+
+var RoleMessage discord.Message
+var Roles = map[string]string{
+    "🧈": "butter",
+    "⚙️": "cog",
+}
 
 func main() {
 	client, err := disgo.New(os.Getenv("DISCORD_TOKEN"),
@@ -26,6 +34,7 @@ func main() {
 				gateway.IntentGuildMessages,
 				gateway.IntentDirectMessages,
 				gateway.IntentGuildVoiceStates,
+				gateway.IntentGuildMessageReactions,
 			),
 		),
 		// add event listeners
@@ -42,7 +51,7 @@ func main() {
 			}
 		}),
 	)
-	
+
 	if err != nil {
 		panic(err)
 	}
@@ -89,4 +98,41 @@ func VoiceRoleAdjustment(joined bool, e *events.GenericGuildVoiceState) error {
 	}
 
 	return nil
+}
+
+func aquireRoleMessage(client bot.Client) error {
+	rolechannelname := "welcome"
+	gid, err := snowflake.Parse("635550573470416896")	
+
+	if err != nil {
+		return fmt.Errorf("failed to parse snowflake: %w", err)
+	}
+	
+	channels, err := client.Rest().GetGuildChannels(gid)
+
+	if err != nil {
+		return fmt.Errorf("failed to get guild channels: %w", err)
+	}
+
+	var rolechannel discord.Channel
+	for _, channel := range channels {
+		if channel.Name() == rolechannelname {
+			rolechannel = channel
+		}
+	}
+
+	var nullflake snowflake.ID
+
+	message, err := client.Rest().GetMessages(rolechannel.ID(), nullflake, nullflake, nullflake, 1)
+
+	if err != nil {
+		return fmt.Errorf("failed to get guild channels: %w", err)
+	}
+
+	if len(message) == 0 {
+		// createdmessage = discord.MessageCreateBuilder
+		
+		// client.Rest().CreateMessage(rolechannel.ID(), )
+	}
+
 }

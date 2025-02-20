@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
-
 
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
@@ -123,16 +124,40 @@ func aquireRoleMessage(client bot.Client) error {
 
 	var nullflake snowflake.ID
 
-	message, err := client.Rest().GetMessages(rolechannel.ID(), nullflake, nullflake, nullflake, 1)
+	messages, err := client.Rest().GetMessages(rolechannel.ID(), nullflake, nullflake, nullflake, 1)
 
 	if err != nil {
-		return fmt.Errorf("failed to get guild channels: %w", err)
+		return fmt.Errorf("failed to get potential role messasges: %w", err)
 	}
 
-	if len(message) == 0 {
-		// createdmessage = discord.MessageCreateBuilder
+	if len(messages) == 0 {
+		createdmessage := discord.NewMessageCreateBuilder()
+
+		var content string
+		for _, emoji := range slices.Sorted(maps.Keys(Roles)) {
+			content += emoji + " : " + Roles[emoji] + "\n"
+		}
+
+		createdmessage.SetContent(content)
 		
-		// client.Rest().CreateMessage(rolechannel.ID(), )
+		newRoleMessage, err := client.Rest().CreateMessage(rolechannel.ID(), createdmessage.MessageCreate)
+
+		if err != nil {
+			return fmt.Errorf("failed to create new role message: %w", err)
+		}
+
+		RoleMessage = *newRoleMessage
+	} else {
+		RoleMessage = messages[0]
 	}
 
+	for _, emoji := range slices.Sorted(maps.Keys(Roles)) {
+		err = client.Rest().AddReaction(RoleMessage.ChannelID, RoleMessage.ID, emoji)
+
+		if err != nil {
+			return fmt.Errorf("failed to add reactions to role message: %w", err)
+		}
+	}
+	
+	return nil
 }
